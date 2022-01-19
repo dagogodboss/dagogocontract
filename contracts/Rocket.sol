@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "./Permissioning/interfaces/IPermissionManager.sol";
+
 
 contract Rocket is AccessControl {
   using Counters for Counters.Counter;
@@ -38,6 +40,7 @@ contract Rocket is AccessControl {
     uint256 price;
     bool isComplete;
     bool canClaimToken;
+    uint256 tier;
   }
   struct ClaimCalendar {
     uint256 firstInterval;
@@ -115,8 +118,7 @@ contract Rocket is AccessControl {
     uint256 amount,
     address _token
   ) public returns (uint256) {
-    // Fee
-    // Vesting Period
+    require(userHasItem(msg.sender, pools[poolId].tier), 'NOT PERMITTED');
     require(amount > 0, "Amount is zero");
     if (pools[poolId].amountContributed == pools[poolId].targetAmount) {
       pools[poolId].isComplete = true;
@@ -142,6 +144,24 @@ contract Rocket is AccessControl {
     emit contributed(poolId, msg.sender, amount, current_id);
     return current_id;
   }
+
+  /**
+  * @dev updatePoolTier 
+  * @param poolId bytes32
+  * @param tierId uint256
+  * @return status bool
+  */
+  
+  function updatePoolTier(bytes32 poolId, uint256 tierId) public returns(bool status){
+    require(
+      hasRole(Rocket_Admin_ROLE, _msgSender()),
+      "must have Rocket Admin role"
+    );
+    pools[poolId].tier = tierId;
+    return true;
+  }
+
+
 
   /** @dev For the Admin*/
   function withdrawFunds(bytes32 poolId) public {
@@ -192,11 +212,12 @@ contract Rocket is AccessControl {
       "Insufficient balance"
     );
     require();
+    uint256 _amount = contributions[contributionId].amountToReceive * (claimCalendars[poolId].depoistBatch - contributions[contributionId].withdrawalBatch)
     require(
       IERC20(pools[poolId].poolRewardAddress).transferFrom(
         address(this),
         msg.sender,
-        contributions[contributionId].amountToReceive * (claimCalendars[poolId].depoistBatch - contributions[contributionId].withdrawalBatch)
+        _amount - _amount.mul(claimCalendars[poolId].claimRate).div(10000)
       ),
       "Transfer failed and reverted."
     );

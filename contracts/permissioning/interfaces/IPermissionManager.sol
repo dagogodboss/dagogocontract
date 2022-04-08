@@ -2,9 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-contract IPermissionManager {
-  function rejectUser(UserProxy[] memory _usersProxies) external;
-
+interface IPermissionManager {
+  
   function userHasItem(address _user, uint256 itemId)
     external
     view

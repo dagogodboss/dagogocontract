@@ -6,7 +6,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-
+import "@openzeppelin/hardhat-upgrades";
 dotenv.config();
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -19,16 +19,38 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
+let mnemonic: string;
+if (!process.env.MNEMONIC) {
+  throw new Error("Please set your MNEMONIC in a .env file");
+} else {
+  mnemonic = process.env.MNEMONIC;
+}
+
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.4",
+  solidity: "0.8.2",
   networks: {
+    // defaultNetwork: hardhat,
+    hardhat: {
+      blockGasLimit: 20000000,
+      throwOnCallFailures: false,
+      chainId: 31337,
+      initialBaseFeePerGas: 0,
+      accounts: {
+        mnemonic,
+        accountsBalance: "1000000000000000000000",
+      },
+    },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      accounts: {
+        count: 10,
+        initialIndex: 0,
+        mnemonic,
+        path: "m/44'/60'/0'/0",
+      },
     },
   },
   gasReporter: {
@@ -36,7 +58,7 @@ const config: HardhatUserConfig = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
+    apiKey: process.env.ETHERSCAN_API_ID,
   },
 };
 

@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 /**
  * @title PemissionManagerStorage
@@ -16,9 +16,7 @@ abstract contract PermissionManagerStorage {
   address public permissionItems;
   // Constants for Permissions ID
 
-  uint256 public constant TIER_1_ID = 1;
-  uint256 public constant TIER_2_ID = 2;
   uint256 public constant REJECTED_ID = 3;
-  uint256 public constant PROTOCOL_CONTRACT = 4;
-  mapping(uint256 => bytes32) Tiers;
+  uint256 public constant SUSPENDED_ID = 0;
+  mapping(uint256 => string) tiers;
 }

@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
@@ -120,199 +120,103 @@ contract PermissionManager is
     return true;
   }
 
+  function createTier(uint256 _tierId, string memory _tierName)
+    external
+    onlyPermissionsAdmin
+  {
+    tiers[_tierId] = _tierName;
+  }
+
   /**
-   * @dev assigns Tier1 permission to the list `_accounts`.
+   * @dev assigns Tier permission to the list `_accounts`.
    *
    * Requirements:
    *
    * - the caller must be the owner.
-   * - each address in `_accounts` should not have Tier1 already assigned.
+   * - each address in `_accounts` should not have the Tier already assigned.
    *
-   * @param _accounts The addresses to assign Tier1.
+   * @param _accounts The addresses to assign Tier.
+   * @param _tierId The ID of the Tier to assign
    */
-  function assingTier1(address[] memory _accounts)
+  function assingTier(address[] memory _accounts, uint256 _tierId)
     external
     onlyPermissionsAdmin
   {
     for (uint256 i = 0; i < _accounts.length; i++) {
       require(
-        !hasTier1(_accounts[i]),
+        !_hasItem(_accounts[i], _tierId),
         "PermissionManager: Address already has Tier 1 assigned"
       );
-      PermissionItems(permissionItems).mint(_accounts[i], TIER_1_ID, 1, "");
+      PermissionItems(permissionItems).mint(
+        _accounts[i],
+        _tierId,
+        1,
+        bytes(tiers[_tierId])
+      );
     }
   }
 
   /**
-   * @dev assigns Tier2 permission to a list of users and proxies.
+   * @dev suspends pemissions effects to a list of users.
    *
    * Requirements:
    *
    * - the caller must be the owner.
-   * - All user addresses in `_usersProxies` should not have Tier2 already assigned.
-   * - All proxy addresses in `_usersProxies` should not have Tier2 already assigned.
+   * - All user addresses in `_users` should not be already suspended.
    *
-   * @param _usersProxies The addresses of the users and proxies.
-   *                      An array of the struct UserProxy where user and proxy are bout required.
+   * @param _users The addresses of the users .
    */
-  function assingTier2(UserProxy[] memory _usersProxies)
-    external
-    onlyPermissionsAdmin
-  {
-    for (uint256 i = 0; i < _usersProxies.length; i++) {
-      UserProxy memory userProxy = _usersProxies[i];
+  function suspendUser(address[] memory _users) external onlyPermissionsAdmin {
+    for (uint256 i = 0; i < _users.length; i++) {
       require(
-        !hasTier2(userProxy.user),
-        "PermissionManager: Address already has Tier 2 assigned"
-      );
-      require(
-        !hasTier2(userProxy.proxy),
-        "PermissionManager: Proxy already has Tier 2 assigned"
-      );
-
-      PermissionItems(permissionItems).mint(userProxy.user, TIER_2_ID, 1, "");
-      PermissionItems(permissionItems).mint(userProxy.proxy, TIER_2_ID, 1, "");
-    }
-  }
-
-  /**
-   * @dev suspends pemissions effects to a list of users and proxies.
-   *
-   * Requirements:
-   *
-   * - the caller must be the owner.
-   * - All user addresses in `_usersProxies` should not be already suspended.
-   * - All proxy addresses in `_usersProxies` should not be already suspended.
-   *
-   * @param _usersProxies The addresses of the users and proxies.
-   *                      An array of the struct UserProxy where is required
-   *                      but proxy can be optional if it is set to zero address.
-   */
-  function suspendUser(UserProxy[] memory _usersProxies)
-    external
-    onlyPermissionsAdmin
-  {
-    for (uint256 i = 0; i < _usersProxies.length; i++) {
-      UserProxy memory userProxy = _usersProxies[i];
-      require(
-        !isSuspended(userProxy.user),
+        !isSuspended(_users[i]),
         "PermissionManager: Address is already suspended"
       );
-      PermissionItems(permissionItems).mint(
-        userProxy.user,
-        SUSPENDED_ID,
-        1,
-        ""
-      );
-
-      if (userProxy.proxy != address(0)) {
-        require(
-          !isSuspended(userProxy.proxy),
-          "PermissionManager: Proxy is already suspended"
-        );
-        PermissionItems(permissionItems).mint(
-          userProxy.proxy,
-          SUSPENDED_ID,
-          1,
-          ""
-        );
-      }
+      PermissionItems(permissionItems).mint(_users[i], SUSPENDED_ID, 1, "");
     }
   }
 
   /**
-   * @dev Assigns Reject permission to a list of users and proxies.
+   * @dev Assigns Reject permission to a list of users.
    *
    * Requirements:
    *
    * - the caller must be the owner.
-   * - All user addresses in `_usersProxies` should not be already rejected.
-   * - All proxy addresses in `_usersProxies` should not be already rejected.
+   * - All user addresses in `_users` should not be already rejected.
    *
    *
-   * @param _usersProxies The addresses of the users and proxies.
-   *                      An array of the struct UserProxy where is required
-   *                      but proxy can be optional if it is set to zero address.
+   * @param _users The addresses of the users.
    */
-  function rejectUser(UserProxy[] memory _usersProxies)
-    external
-    onlyPermissionsAdmin
-  {
-    for (uint256 i = 0; i < _usersProxies.length; i++) {
-      UserProxy memory userProxy = _usersProxies[i];
+  function rejectUser(address[] memory _users) external onlyPermissionsAdmin {
+    for (uint256 i = 0; i < _users.length; i++) {
       require(
-        !isRejected(userProxy.user),
+        !isRejected(_users[i]),
         "PermissionManager: Address is already rejected"
       );
-      PermissionItems(permissionItems).mint(userProxy.user, REJECTED_ID, 1, "");
-
-      if (userProxy.proxy != address(0)) {
-        require(
-          !isRejected(userProxy.proxy),
-          "PermissionManager: Proxy is already rejected"
-        );
-        PermissionItems(permissionItems).mint(
-          userProxy.proxy,
-          REJECTED_ID,
-          1,
-          ""
-        );
-      }
+      PermissionItems(permissionItems).mint(_users[i], REJECTED_ID, 1, "");
     }
   }
 
   /**
-   * @dev removes Tier1 permission from the list `_accounts`.
+   * @dev removes Tier permission from the list `_accounts`.
    *
    * Requirements:
    *
    * - the caller must be the owner.
-   * - each address in `_accounts` should have Tier1 assigned.
+   * - each address in `_accounts` should have the Tier assigned.
    *
-   * @param _accounts The addresses to revoke Tier1.
+   * @param _accounts The addresses to revoke Tier.
    */
-  function revokeTier1(address[] memory _accounts)
+  function revokeTier(address[] memory _accounts, uint256 _tierId)
     external
     onlyPermissionsAdmin
   {
     for (uint256 i = 0; i < _accounts.length; i++) {
       require(
-        hasTier1(_accounts[i]),
+        _hasItem(_accounts[i], _tierId),
         "PermissionManager: Address doesn't has Tier 1 assigned"
       );
-      PermissionItems(permissionItems).burn(_accounts[i], TIER_1_ID, 1);
-    }
-  }
-
-  /**
-   * @dev removes Tier2 permission from a list of users and proxies.
-   *
-   * Requirements:
-   *
-   * - the caller must be the owner.
-   * - All user addresses in `_usersProxies` should have Tier2 assigned.
-   * - All proxy addresses in should have Tier2 assigned.
-   *
-   * @param _usersProxies The addresses of the users and proxies.
-   *                      An array of the struct UserProxy where user and proxy are bout required.
-   */
-  function revokeTier2(UserProxy[] memory _usersProxies)
-    external
-    onlyPermissionsAdmin
-  {
-    for (uint256 i = 0; i < _usersProxies.length; i++) {
-      UserProxy memory userProxy = _usersProxies[i];
-      require(
-        hasTier2(userProxy.user),
-        "PermissionManager: Address doesn't has Tier 2 assigned"
-      );
-      require(
-        hasTier2(userProxy.proxy),
-        "PermissionManager: Proxy doesn't has Tier 2 assigned"
-      );
-
-      PermissionItems(permissionItems).burn(userProxy.user, TIER_2_ID, 1);
-      PermissionItems(permissionItems).burn(userProxy.proxy, TIER_2_ID, 1);
+      PermissionItems(permissionItems).burn(_accounts[i], _tierId, 1);
     }
   }
 
@@ -322,32 +226,20 @@ contract PermissionManager is
    * Requirements:
    *
    * - the caller must be the owner.
-   * - All user addresses in `_usersProxies` should be suspended.
-   * - All proxy addresses in `_usersProxies` should be suspended.
+   * - All user addresses in `_users` should be suspended.
    *
-   * @param _usersProxies The addresses of the users and proxies.
-   *                      An array of the struct UserProxy where is required
-   *                      but proxy can be optional if it is set to zero address.
+   * @param _users The addresses of the users.
    */
-  function unsuspendUser(UserProxy[] memory _usersProxies)
+  function unsuspendUser(address[] memory _users)
     external
     onlyPermissionsAdmin
   {
-    for (uint256 i = 0; i < _usersProxies.length; i++) {
-      UserProxy memory userProxy = _usersProxies[i];
+    for (uint256 i = 0; i < _users.length; i++) {
       require(
-        isSuspended(userProxy.user),
+        isSuspended(_users[i]),
         "PermissionManager: Address is not currently suspended"
       );
-      PermissionItems(permissionItems).burn(userProxy.user, SUSPENDED_ID, 1);
-
-      if (userProxy.proxy != address(0)) {
-        require(
-          isSuspended(userProxy.proxy),
-          "PermissionManager: Proxy is not currently suspended"
-        );
-        PermissionItems(permissionItems).burn(userProxy.proxy, SUSPENDED_ID, 1);
-      }
+      PermissionItems(permissionItems).burn(_users[i], SUSPENDED_ID, 1);
     }
   }
 
@@ -357,33 +249,18 @@ contract PermissionManager is
    * Requirements:
    *
    * - the caller must be the owner.
-   * - All user addresses in `_usersProxies` should be rejected.
-   * - All proxy addresses in `_usersProxies` should be rejected.
+   * - All user addresses in `_users` should be rejected.
    *
    *
-   * @param _usersProxies The addresses of the users and proxies.
-   *                      An array of the struct UserProxy where is required
-   *                      but proxy can be optional if it is set to zero address.
+   * @param _users The addresses of the users and .
    */
-  function unrejectUser(UserProxy[] memory _usersProxies)
-    external
-    onlyPermissionsAdmin
-  {
-    for (uint256 i = 0; i < _usersProxies.length; i++) {
-      UserProxy memory userProxy = _usersProxies[i];
+  function unrejectUser(address[] memory _users) external onlyPermissionsAdmin {
+    for (uint256 i = 0; i < _users.length; i++) {
       require(
-        isRejected(userProxy.user),
+        isRejected(_users[i]),
         "PermissionManager: Address is not currently rejected"
       );
-      PermissionItems(permissionItems).burn(userProxy.user, REJECTED_ID, 1);
-
-      if (userProxy.proxy != address(0)) {
-        require(
-          isRejected(userProxy.proxy),
-          "PermissionManager: Proxy is not currently rejected"
-        );
-        PermissionItems(permissionItems).burn(userProxy.proxy, REJECTED_ID, 1);
-      }
+      PermissionItems(permissionItems).burn(_users[i], REJECTED_ID, 1);
     }
   }
 
@@ -449,24 +326,6 @@ contract PermissionManager is
     returns (bool)
   {
     return PermissionItems(permissionItems).balanceOf(_user, itemId) > 0;
-  }
-
-  /**
-   * @dev Returns `true` if `_account` has been assigned Tier1 permission.
-   *
-   * @param _account The address of the user.
-   */
-  function hasTier1(address _account) public view returns (bool) {
-    return _hasItem(_account, TIER_1_ID);
-  }
-
-  /**
-   * @dev Returns `true` if `_account` has been assigned Tier2 permission.
-   *
-   * @param _account The address of the user.
-   */
-  function hasTier2(address _account) public view returns (bool) {
-    return _hasItem(_account, TIER_2_ID);
   }
 
   /**

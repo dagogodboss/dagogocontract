@@ -2,19 +2,117 @@
 
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "./permissioning/interfaces/IPermissionManager.sol";
 
-contract Rocket is AccessControl {
-  using Counters for Counters.Counter;
-  Counters.Counter private _contributionInt;
+contract Rocket is Initializable, AccessControlUpgradeable {
+  using SafeMathUpgradeable for uint256;
+  using CountersUpgradeable for CountersUpgradeable.Counter;
+  CountersUpgradeable.Counter private _contributionInt;
+  // Declare Simple Global variable then complex global variables
   bytes32 public constant Rocket_Admin_ROLE = keccak256("Rocket_Admin_ROLE");
   address permissionAddress;
+  address private feeAddress;
+  uint256 internal feeAmount = 12;
+  uint256 internal constant DECIMAL = 18;
+  mapping(bytes32 => Pool) public pools;
+  mapping(uint256 => Contribution) public contributions;
+  mapping(bytes32 => ClaimCalendar) public claimCalendars;
+  mapping(address => Contribution[]) public myContributions;
 
-  constructor(address _permissionAddress) {
+  struct Pool {
+    uint256 tokenClaimAmount;
+    uint256 totalClaimToken;
+    uint256 targetAmount;
+    uint256 expiryTime;
+    uint256 amountContributed;
+    address poolRewardAddress;
+    uint256 minContributionAmount;
+    uint256 maxContributionAmount;
+    uint256 contributionFee;
+    uint256 contributionOpenDate;
+    uint256 contributionCloseDate;
+    uint256 price;
+    uint256[] tiers;
+    bool isComplete;
+    bool canClaimToken;
+    address[] tokens;
+    address receiver;
+    bytes32 poolAddress;
+  }
+
+  struct ClaimCalendar {
+    uint256 firstInterval;
+    uint256 nextInterval;
+    uint256 finalInterval;
+    uint256 depoistBatch;
+    uint256 claimRate;
+    uint256 duration;
+  }
+
+  struct Contribution {
+    bytes32 poolId;
+    address contributor;
+    uint256 amountToReceive;
+    uint256 amountContributed;
+    uint256 lastWithdrawal;
+    uint256 nextWithdrawal;
+    uint256 totalWithdrwan;
+    uint256 withdrawalBatch;
+  }
+
+  struct CreatePoolDTO {
+    uint256 _targetAmount;
+    address[] _tokens;
+    uint256 expiry;
+    address _receiver;
+    uint256 _price;
+    address _poolRewardAddress;
+    uint256 _tokenClaimAmount;
+    uint256 _claimDuration;
+    uint256 _firstInterval;
+    uint256 _nextInterval;
+    uint256 _finalInterval;
+    uint256 _claimRate;
+    uint256[] _tiers;
+  }
+
+  event CreatedPool(bytes32 poolId, uint256 poolTargetAmount, address receiver);
+  event contributed(
+    bytes32 poolId,
+    address contributor,
+    uint256 amount,
+    uint256 contributionId
+  );
+
+  /**
+   * @dev Initalize the contract.
+   *
+   * Sets ownership to the account that deploys the contract.
+   *
+   * Requirements:
+   *
+   * - `_permissionAddress` should not be the zero address.
+   *
+   * @param _permissionAddress The address of the new Pemissions module.
+   * @param _contractAdmin The address of the Smart contract default admin.
+   * @param _rocketAdmin The address of the rocket admin.
+   */
+  function initialize(
+    address _permissionAddress,
+    address _contractAdmin,
+    address _rocketAdmin
+  ) public {
     permissionAddress = _permissionAddress;
-    _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+    __AccessControl_init();
+
+    _setupRole(DEFAULT_ADMIN_ROLE, _contractAdmin);
+
+    setRocketAdmin(_rocketAdmin);
   }
 
   /**
@@ -28,71 +126,31 @@ contract Rocket is AccessControl {
     grantRole(Rocket_Admin_ROLE, _rocketAdmin);
   }
 
-  struct Pool {
-    address poolRewardAddress;
-    uint256 tokenClaimAmount;
-    uint256 totalClaimToken;
-    uint256 targetAmount;
-    address[] tokens;
-    bytes32 poolAddress;
-    uint256 expiryTime;
-    uint256 amountContributed;
-    address receiver;
-    uint256 price;
-    bool isComplete;
-    bool canClaimToken;
-    uint256 tier;
-  }
-  struct ClaimCalendar {
-    uint256 firstInterval;
-    uint256 nextInterval;
-    uint256 finalInterval;
-    uint256 depoistBatch;
-    uint256 claimRate;
-    uint256 duration;
-  }
-  struct Contribution {
-    bytes32 poolId;
-    address contributor;
-    uint256 amountToReceive;
-    uint256 amountContributed;
-    uint256 lastWithdrawal;
-    uint256 nextWithdrawal;
-    uint256 totalWithdrwan;
-    uint256 withdrawalBatch;
-  }
-
-  mapping(bytes32 => Pool) public pools;
-  mapping(uint256 => Contribution) public contributions;
-  mapping(bytes32 => ClaimCalendar) public claimCalendars;
-  mapping(address => Contribution[]) public myContributions;
-
-  struct PoolParams {
-    uint256 _targetAmount;
-    address[] _tokens;
-    uint256 expiry;
-    address _receiver;
-    uint256 _price;
-    address _poolRewardAddress;
-    uint256 _tokenClaimAmount;
-    uint256 _claimDuration;
-    uint256 _firstInterval;
-    uint256 _nextInterval;
-    uint256 _finalInterval;
-    uint256 _claimRate;
-    uint256 _tier;
-  }
-
-  function createPool(PoolParams memory params) public returns (bytes32 pool) {
+  /**
+   * @dev this create a new pool
+   * Requirements:
+   * - the caller must have ``Admin``'s Role.
+   * @param params PoolParams
+   * @return pool boolean
+   */
+  function createPool(CreatePoolDTO memory params)
+    public
+    returns (bytes32 pool)
+  {
     require(
       hasRole(Rocket_Admin_ROLE, _msgSender()),
-      "must have Rocket Admin role"
+      "Rocket_Admin_ROLE required"
     );
+    // @TODO a create pool token ERC1155 pool token
+    // this token should have the pool name and a USDC pair also it should be an NFT
+    // so that pool contributors can mint NFT to themselves.
+
     bytes32 uinqueAddress = keccak256(abi.encodePacked(block.timestamp));
+
     Pool memory _pool = Pool({
       targetAmount: params._targetAmount,
       receiver: params._receiver,
-      price: params._price,
+      price: params._price.mul(10**DECIMAL),
       poolAddress: uinqueAddress,
       poolRewardAddress: params._poolRewardAddress,
       tokenClaimAmount: params._tokenClaimAmount,
@@ -102,9 +160,16 @@ contract Rocket is AccessControl {
       amountContributed: 0,
       isComplete: false,
       canClaimToken: false,
-      tier: params._tier
+      tiers: params._tiers,
+      minContributionAmount: 0,
+      maxContributionAmount: 0,
+      contributionFee: 0,
+      contributionOpenDate: 0,
+      contributionCloseDate: 0
     });
+
     pools[uinqueAddress] = _pool;
+    //
     ClaimCalendar memory schedule = ClaimCalendar({
       firstInterval: params._firstInterval,
       nextInterval: params._nextInterval,
@@ -123,13 +188,7 @@ contract Rocket is AccessControl {
     uint256 amount,
     address _token
   ) public returns (uint256) {
-    require(
-      IPermissionManager(permissionAddress).userHasItem(
-        msg.sender,
-        pools[poolId].tier
-      ),
-      "NOT PERMITTED"
-    );
+    require(canContribute(pools[poolId].tiers), "NOT PERMITTED TO CONTRIBUTE");
     require(amount > 0, "Amount is zero");
     if (pools[poolId].amountContributed == pools[poolId].targetAmount) {
       pools[poolId].isComplete = true;
@@ -144,8 +203,8 @@ contract Rocket is AccessControl {
     contributions[current_id] = Contribution(
       poolId,
       msg.sender,
+      amount.mul(10**DECIMAL).div(pools[poolId].price),
       amount,
-      (amount * 10**18) / pools[poolId].price,
       0,
       0,
       0,
@@ -155,7 +214,9 @@ contract Rocket is AccessControl {
     if (pools[poolId].amountContributed == pools[poolId].targetAmount) {
       pools[poolId].isComplete = true;
     }
-    safeTransfer(_token, address(this), amount);
+    uint256 fee = amount.mul(10**DECIMAL).mul(feeAmount.mul(10**DECIMAL - 1));
+    safeTransfer(_token, feeAddress, fee);
+    safeTransfer(_token, address(this), (amount - fee));
     emit contributed(poolId, msg.sender, amount, current_id);
     return current_id;
   }
@@ -167,15 +228,25 @@ contract Rocket is AccessControl {
    * @return status bool
    */
 
-  function updatePoolTier(bytes32 poolId, uint256 tierId)
-    public
-    returns (bool status)
-  {
+  function updateContributionTier(
+    bytes32 poolId,
+    uint256 tierId,
+    uint256 _minContributionAmount,
+    uint256 _maxContributionAmount,
+    uint256 _contributionFee,
+    uint256 _contributionOpenDate,
+    uint256 _contributionCloseDate
+  ) public returns (bool status) {
     require(
       hasRole(Rocket_Admin_ROLE, _msgSender()),
       "must have Rocket Admin role"
     );
-    pools[poolId].tier = tierId;
+    pools[poolId].tiers.push(tierId);
+    pools[poolId].minContributionAmount = _minContributionAmount;
+    pools[poolId].maxContributionAmount = _maxContributionAmount;
+    pools[poolId].contributionFee = _contributionFee;
+    pools[poolId].contributionOpenDate = _contributionOpenDate;
+    pools[poolId].contributionCloseDate = _contributionCloseDate;
     return true;
   }
 
@@ -262,11 +333,14 @@ contract Rocket is AccessControl {
     );
   }
 
-  event CreatedPool(bytes32 poolId, uint256 poolTargetAmount, address receiver);
-  event contributed(
-    bytes32 poolId,
-    address contributor,
-    uint256 amount,
-    uint256 contributionId
-  );
+  function canContribute(uint256[] memory tiers) private returns (bool) {
+    for (uint256 i = 0; i < tiers.length; i++) {
+      if (
+        IPermissionManager(permissionAddress).userHasItem(msg.sender, tiers[i])
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

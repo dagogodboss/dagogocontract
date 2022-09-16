@@ -8,21 +8,18 @@ async function main(): Promise<void> {
   const [deployer] = await ethers.getSigners();
   const [deployerAddress] = await Promise.all([deployer.getAddress()]);
   await hre
-    .run("verify:verify", {
-      address: "0x6c4E442af781EB146896A31Fd52B245788ADC117",
-      constructorArguments: [
-        deploymentData.permissionItem.address,
-        deployerAddress,
-      ],
-    })
-    .catch(ignoreAlreadyVerifiedError);
+  .run("verify:verify", {
+    address: deploymentData.permissionItem.address,
+    constructorArguments: [],
+  })
+  .catch(ignoreAlreadyVerifiedError);
+  
   await hre
     .run("verify:verify", {
-      address: deploymentData.permissionItem.address,
+      address: "0x5cdD06C316E6F2dE91610808FA397fA79f590574",
       constructorArguments: [],
     })
     .catch(ignoreAlreadyVerifiedError);
-
   await hre
     .run("verify:verify", {
       address: deploymentData.rocket.address,

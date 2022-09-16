@@ -29,7 +29,8 @@ contract Rocket is Initializable, RocketModel, AccessControlUpgradeable {
   function initialize(
     address _permissionAddress,
     address _contractAdmin,
-    address _rocketAdmin
+    address _rocketAdmin,
+    address _feeAddress
   ) public {
     permissionAddress = _permissionAddress;
 
@@ -38,6 +39,7 @@ contract Rocket is Initializable, RocketModel, AccessControlUpgradeable {
     _setupRole(DEFAULT_ADMIN_ROLE, _contractAdmin);
 
     setRocketAdmin(_rocketAdmin);
+    feeAddress = _feeAddress;
   }
 
   /**
@@ -130,7 +132,7 @@ contract Rocket is Initializable, RocketModel, AccessControlUpgradeable {
     if (pools[poolId].amountContributed == pools[poolId].targetAmount) {
       pools[poolId].isComplete = true;
     }
-    uint256 fee = amount.mul(10**DECIMAL).mul(feeAmount.mul(10**DECIMAL - 1));
+    uint256 fee = amount.mul(10**DECIMAL).mul(contributionSchedules[_scheduleId].contributionFee.mul(10**DECIMAL - 1));
     safeTransfer(_token, feeAddress, fee);
     safeTransfer(_token, address(this), (amount - fee));
     emit contributed(poolId, msg.sender, amount, current_id);

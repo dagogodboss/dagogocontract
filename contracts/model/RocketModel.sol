@@ -7,7 +7,6 @@ contract RocketModel {
   bytes32 public constant Rocket_Admin_ROLE = keccak256("Rocket_Admin_ROLE");
   address permissionAddress;
   address internal feeAddress;
-  uint256 internal feeAmount = 12;
   uint256 internal constant DECIMAL = 18;
   mapping(bytes32 => Pool) public pools;
   mapping(uint256 => Contribution) public contributions;

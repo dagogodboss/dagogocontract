@@ -8,4 +8,6 @@ interface IPermissionManager {
     external
     view
     returns (bool);
+
+  function tierExists(uint256 itemId) external view returns(bool);
 }

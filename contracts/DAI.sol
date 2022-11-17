@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract ERC20Token is ERC20 {
+contract DAI is ERC20 {
     string  private _token_name;
     string  private _token_symbol;
     constructor(string memory _name, string memory sym, uint256 initialSupply) ERC20(_name, sym) {

@@ -72,32 +72,42 @@ contract Rocket is Initializable, RocketModel, AccessControlUpgradeable {
     bytes32 uinqueAddress = keccak256(abi.encodePacked(block.timestamp));
 
     Pool memory _pool = Pool({
-      targetAmount: params._targetAmount,
-      receiver: params._receiver,
-      price: params._price.mul(10**DECIMAL),
-      poolAddress: uinqueAddress,
-      poolRewardAddress: params._poolRewardAddress,
-      tokenClaimAmount: params._tokenClaimAmount,
-      expiryTime: block.timestamp + (params.expiry * 1 days),
-      totalClaimToken: 0,
-      tokens: params._tokens,
-      amountContributed: 0,
       isComplete: false,
-      canClaimToken: false
+      canClaimToken: false,
+      amountContributed: 0,
+      totalClaimedToken: 0,
+      tokens: params._tokens,
+      receiver: params._receiver,
+      poolAddress: uinqueAddress,
+      targetAmount: params._targetAmount,
+      price: params._price.mul(10**DECIMAL),
+      poolRewardAddress: params._poolRewardAddress,
+      poolRewardTokenAmount: params._poolRewardTokenAmount,
+      expiryTime: block.timestamp + (params.expiry * 1 days),
+      currentDistributionBatchId:0
     });
-
     pools[uinqueAddress] = _pool;
-    ClaimCalendar memory schedule = ClaimCalendar({
-      firstInterval: params._firstInterval,
-      nextInterval: params._nextInterval,
-      finalInterval: params._finalInterval,
-      duration: params._claimDuration,
-      depoistBatch: 0,
-      claimRate: params._claimRate
-    });
-    claimCalendars[uinqueAddress] = schedule;
-    emit CreatedPool(uinqueAddress, params._targetAmount, params._receiver);
+    emit CreatedPool(uinqueAddress, params._targetAmount, params._receiver, params._tokens);
     return uinqueAddress;
+  }
+
+  /**
+    @dev only admin can call this method. this method create a new distribution schedule
+    @param _poolId the pool ID
+    @return distributionId address.
+   */
+  function createDistributionSchedule(bytes32 _poolId, uint256 _startDate, uint256 _closeDate, uint256 _claimPercent) onlyRole(Rocket_Admin_ROLE) external returns (bytes32 distributionId){
+    bytes32 id = keccak256(abi.encodePacked(block.timestamp));
+    DistributionSchedule memory schedule = DistributionSchedule({
+      poolId : _poolId,
+      startDate : _startDate,
+      closeDate: _closeDate,
+      claimPercentage: _claimPercent.mul(10000).div(100),
+      batchId : pools[_poolId].currentDistributionBatchId + 1
+    });
+    distributionSchedules[id] = schedule;
+    emit CreatedDistributionSchedule(id, _poolId, (pools[_poolId].currentDistributionBatchId + 1), _startDate, _closeDate);
+    return id;
   }
 
   function contribute(
@@ -106,10 +116,18 @@ contract Rocket is Initializable, RocketModel, AccessControlUpgradeable {
     uint256 amount,
     address _token
   ) public returns (uint256) {
+  
     require(canContribute(_scheduleId, poolId), "NOT PERMITTED TO CONTRIBUTE");
+
     require(amount > 0, "Amount is zero");
+
+    require(amount >= contributionSchedules[_scheduleId].minContributionAmount && amount <= contributionSchedules[_scheduleId].maxContributionAmount, "Not a valid amount");
+
+    require(block.timestamp >= contributionSchedules[_scheduleId].contributionOpenDate && block.timestamp <= contributionSchedules[_scheduleId].contributionCloseDate, "pool is not active");
+
     if (pools[poolId].amountContributed == pools[poolId].targetAmount) {
       pools[poolId].isComplete = true;
+      emit PoolTargetCompleted(poolId);
       require(
         pools[poolId].amountContributed < pools[poolId].targetAmount,
         "Target reached"
@@ -131,11 +149,12 @@ contract Rocket is Initializable, RocketModel, AccessControlUpgradeable {
     myContributions[msg.sender].push(contributions[current_id]);
     if (pools[poolId].amountContributed == pools[poolId].targetAmount) {
       pools[poolId].isComplete = true;
+      emit PoolTargetCompleted(poolId);
     }
-    uint256 fee = amount.mul(10**DECIMAL).mul(contributionSchedules[_scheduleId].contributionFee.mul(10**DECIMAL - 1));
+    uint256 fee = (amount.mul(contributionSchedules[_scheduleId].contributionFee)).div(FEECONS);
+    emit Contributed(poolId, msg.sender, amount, current_id);
     safeTransfer(_token, feeAddress, fee);
     safeTransfer(_token, address(this), (amount - fee));
-    emit contributed(poolId, msg.sender, amount, current_id);
     return current_id;
   }
 
@@ -164,80 +183,94 @@ contract Rocket is Initializable, RocketModel, AccessControlUpgradeable {
       hasRole(Rocket_Admin_ROLE, _msgSender()),
       "must have Rocket Admin role"
     );
+    require(IPermissionManager(permissionAddress).tierExists(tierId), "Tier Not Found");
     // create contribution schedules for a Pool
     bytes32 uinqueAddress = keccak256(abi.encodePacked(block.timestamp));
-    ContributionSchedule memory schedule = ContributionSchedule(poolId, tierId, _minContributionAmount, _maxContributionAmount, _contributionFee, _contributionOpenDate, _contributionCloseDate);
+    ContributionSchedule memory schedule = ContributionSchedule(poolId, tierId, _minContributionAmount, _maxContributionAmount, (_contributionFee.mul(10000).div(100)), _contributionOpenDate, _contributionCloseDate);
     contributionSchedules[uinqueAddress] = schedule;
+    emit CreatedContributionSchedule(poolId, uinqueAddress);
     return uinqueAddress;
   }
 
-  /** @dev For the Admin*/
-  function withdrawFunds(bytes32 poolId) public {
+  /**
+  *  @dev For the Admin 
+  *  Pulls funds from the pool to the pool benefactor.
+  *  @param poolId bytes32
+  */
+  function withdrawFundToReceiver(bytes32 poolId) external {
     require(
       hasRole(Rocket_Admin_ROLE, _msgSender()),
       "must have Rocket Admin role"
     );
 
-    require(pools[poolId].amountContributed > 0, "Invalid pool");
+    require(pools[poolId].amountContributed > 0, "pool is empty");
     require(pools[poolId].isComplete, "Pool is still active");
-    require(
-      IERC20(pools[poolId].tokens[0]).transfer(
-        pools[poolId].receiver,
-        pools[poolId].amountContributed
-      ),
-      "Transfer failed and reverted."
-    );
+    
+    for(uint256 i = 0; i < pools[poolId].tokens.length; i++){
+      uint256 availableAmount = IERC20(pools[poolId].tokens[i]).balanceOf(address(this));
+      require(
+        IERC20(pools[poolId].tokens[i]).transfer(
+          pools[poolId].receiver,
+          availableAmount
+        ),
+        "Transfer failed and reverted."
+      );
+    }
   }
 
-  function deposit(bytes32 poolId) public returns (bool) {
+  /**
+    @dev Admin depoists the Pool reward token for contributors to withdraw their reward
+    @param poolId bytes32
+   */
+  function depositPoolRewardTokens(bytes32 poolId) external returns (bool) {
     require(
       hasRole(Rocket_Admin_ROLE, _msgSender()),
       "must have Rocket Admin role"
     );
-    require(pools[poolId].isComplete, "Pool is still active");
+    require(pools[poolId].isComplete, "Pool is active");
     pools[poolId].canClaimToken = true;
-    claimCalendars[poolId].depoistBatch += 1;
     safeTransfer(
       pools[poolId].poolRewardAddress,
       address(this),
-      pools[poolId].tokenClaimAmount
+      pools[poolId].poolRewardTokenAmount
     );
     return true;
   }
 
-  // @TODO make it easy to get amount contirbutded to a particular pool
-  function claimToken(bytes32 poolId, uint256 contributionId)
+  function claimPoolRewardToken(bytes32 poolId, uint256 contributionId, bytes32 distributionId)
     public
     returns (bool)
   {
-    require(pools[poolId].isComplete, "Pool is still active");
-    require(pools[poolId].canClaimToken, "Pool has not receive reward tokens");
-    pools[poolId].totalClaimToken += contributions[contributionId]
-      .amountToReceive;
+    require(pools[poolId].isComplete, "Pool is active");
+    require(pools[poolId].canClaimToken, "Pool has no reward tokens");
     require(
       IERC20(pools[poolId].poolRewardAddress).balanceOf(address(this)) >=
         contributions[contributionId].amountToReceive,
       "Insufficient balance"
     );
-    // require();
+
+    require(distributionSchedules[distributionId].batchId > contributions[contributionId].distributionBatchId, "double claim found");
+ 
+    require (block.timestamp >= distributionSchedules[distributionId].startDate && block.timestamp <= distributionSchedules[distributionId].closeDate, "distribution not available");
+ 
+    pools[poolId].totalClaimedToken += contributions[contributionId].amountToReceive;
+    
     uint256 _amount = contributions[contributionId].amountToReceive *
-      (claimCalendars[poolId].depoistBatch -
-        contributions[contributionId].withdrawalBatch);
-    // Update deposit batch as you claim
-    // Update the claim rate and get
+      (distributionSchedules[distributionId].batchId -
+        contributions[contributionId].distributionBatchId);
+    contributions[contributionId].distributionBatchId = distributionSchedules[distributionId].batchId;
+
     require(
       IERC20(pools[poolId].poolRewardAddress).transferFrom(
         address(this),
         msg.sender,
-        _amount - ((_amount * claimCalendars[poolId].claimRate) / 10000)
+        _amount - ((_amount * distributionSchedules[distributionId].claimPercentage) / FEECONS)
       ),
       "Transfer failed and reverted."
     );
     return true;
   }
 
-  // @Todo users can claim in percentage,
-  // but we can allow user claim be lated tokens from previous days and months
   function safeTransfer(
     address token,
     address _receiver,

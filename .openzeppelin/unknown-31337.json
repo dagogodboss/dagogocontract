@@ -6,20 +6,30 @@
   },
   "proxies": [
     {
+      "address": "0x13b9cDd44aC6b9CE596e39B706ef3F4e733Acdd2",
+      "txHash": "0x41cf9df4f33cc4afb58b55dc38d425507734e613cbc0b6533fbbe79527b216cd",
+      "kind": "transparent"
+    },
+    {
+      "address": "0x0b63DEaE9537f65024e33B7fF20d30A8aaB5004a",
+      "txHash": "0xc9c3e7efdf31caa6dc6d684ee7ec618774d536523fd214463244008a5ac1d3b7",
+      "kind": "transparent"
+    },
+    {
       "address": "0x87fd7f24D5A2FACF298076Df751Ac2E320013851",
-      "txHash": "0xe6ecf25127d7578e5a8dc0d7c29951a31c24a7999db4fc6aeb2b68121a476fc9",
+      "txHash": "0x1a1603454de645e00c667256cced81bf18d3d9ad7eedfd58ab639e100850d9cc",
       "kind": "transparent"
     },
     {
       "address": "0xb3e49bfE8D7071d671E8E385ca506a52f8b54a96",
-      "txHash": "0x61fef30b24930d6aeea794ccb5961c26b58baf39702b47b93576b6c10e556c0c",
+      "txHash": "0x2264c1bb077635ce361e068bbd7555e47b549322ffd9eb19638be790496b41dc",
       "kind": "transparent"
     }
   ],
   "impls": {
-    "56e76ba5e255d652cd8ea729cf711749b518934822ea0b6c5d911b1a709e1b4b": {
+    "cfff113422c6169d80c7b53a4d130e08b29c5d6246c4f61a783ac750934dc30e": {
       "address": "0xbd65c66A0e889e0a23ff8EbA57CCF035F03f056e",
-      "txHash": "0x143f0f41c8b6b5aff6f7bec0ebe9e532d0c1cc0f318cc1b855798574dd2c4d47",
+      "txHash": "0x0e535e027e6efe978a2922521f6b5bae705a73218c189b4ffd09a4ecb63632cf",
       "layout": {
         "storage": [
           {
@@ -76,15 +86,15 @@
             "slot": "151",
             "type": "t_address",
             "contract": "PermissionManagerStorage",
-            "src": "contracts\\permissioning\\PermissionManagerStorage.sol:16"
+            "src": "contracts\\permissioning\\PermissionManagerStorage.sol:17"
           },
           {
             "label": "tiers",
             "offset": 0,
             "slot": "152",
-            "type": "t_mapping(t_uint256,t_string_storage)",
+            "type": "t_mapping(t_uint256,t_bytes32)",
             "contract": "PermissionManagerStorage",
-            "src": "contracts\\permissioning\\PermissionManagerStorage.sol:21"
+            "src": "contracts\\permissioning\\PermissionManagerStorage.sol:22"
           }
         ],
         "types": {
@@ -116,12 +126,8 @@
             "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_string_storage)": {
-            "label": "mapping(uint256 => string)",
-            "numberOfBytes": "32"
-          },
-          "t_string_storage": {
-            "label": "string",
+          "t_mapping(t_uint256,t_bytes32)": {
+            "label": "mapping(uint256 => bytes32)",
             "numberOfBytes": "32"
           },
           "t_struct(RoleData)43_storage": {
@@ -149,9 +155,9 @@
         }
       }
     },
-    "32df5b71492c8a2041703178cdc3dada14112ae34d77fe1728f5adc2928a74e3": {
+    "3d57861a130298bc6ed38485741a9c345f235dd970dfd90940b6fc1282c61723": {
       "address": "0xD5b2c24b2656b084f772E99168444a10EC17c7ff",
-      "txHash": "0x53ba6debb577f4511bc975d09ed4edf99118ae7ae0c8195f889f1a1323149def",
+      "txHash": "0x9553c52b71ec873e6a6a899ce4a1d69baa1d25c13072d7d7a557398682b10c91",
       "layout": {
         "storage": [
           {
@@ -190,41 +196,41 @@
             "label": "pools",
             "offset": 0,
             "slot": "2",
-            "type": "t_mapping(t_bytes32,t_struct(Pool)2020_storage)",
+            "type": "t_mapping(t_bytes32,t_struct(Pool)5102_storage)",
             "contract": "RocketModel",
-            "src": "contracts\\model\\RocketModel.sol:11"
+            "src": "contracts\\model\\RocketModel.sol:12"
           },
           {
             "label": "contributions",
             "offset": 0,
             "slot": "3",
-            "type": "t_mapping(t_uint256,t_struct(Contribution)2050_storage)",
-            "contract": "RocketModel",
-            "src": "contracts\\model\\RocketModel.sol:12"
-          },
-          {
-            "label": "claimCalendars",
-            "offset": 0,
-            "slot": "4",
-            "type": "t_mapping(t_bytes32,t_struct(ClaimCalendar)2033_storage)",
+            "type": "t_mapping(t_uint256,t_struct(Contribution)5130_storage)",
             "contract": "RocketModel",
             "src": "contracts\\model\\RocketModel.sol:13"
           },
           {
             "label": "myContributions",
             "offset": 0,
-            "slot": "5",
-            "type": "t_mapping(t_address,t_array(t_struct(Contribution)2050_storage)dyn_storage)",
+            "slot": "4",
+            "type": "t_mapping(t_address,t_array(t_struct(Contribution)5130_storage)dyn_storage)",
             "contract": "RocketModel",
             "src": "contracts\\model\\RocketModel.sol:14"
           },
           {
             "label": "contributionSchedules",
             "offset": 0,
-            "slot": "6",
-            "type": "t_mapping(t_bytes32,t_struct(ContributionSchedule)1994_storage)",
+            "slot": "5",
+            "type": "t_mapping(t_bytes32,t_struct(ContributionSchedule)5074_storage)",
             "contract": "RocketModel",
             "src": "contracts\\model\\RocketModel.sol:15"
+          },
+          {
+            "label": "distributionSchedules",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_bytes32,t_struct(DistributionSchedule)5113_storage)",
+            "contract": "RocketModel",
+            "src": "contracts\\model\\RocketModel.sol:16"
           },
           {
             "label": "__gap",
@@ -276,7 +282,7 @@
             "label": "address[]",
             "numberOfBytes": "32"
           },
-          "t_array(t_struct(Contribution)2050_storage)dyn_storage": {
+          "t_array(t_struct(Contribution)5130_storage)dyn_storage": {
             "label": "struct RocketModel.Contribution[]",
             "numberOfBytes": "32"
           },
@@ -296,7 +302,7 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_array(t_struct(Contribution)2050_storage)dyn_storage)": {
+          "t_mapping(t_address,t_array(t_struct(Contribution)5130_storage)dyn_storage)": {
             "label": "mapping(address => struct RocketModel.Contribution[])",
             "numberOfBytes": "32"
           },
@@ -304,15 +310,15 @@
             "label": "mapping(address => bool)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_bytes32,t_struct(ClaimCalendar)2033_storage)": {
-            "label": "mapping(bytes32 => struct RocketModel.ClaimCalendar)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_bytes32,t_struct(ContributionSchedule)1994_storage)": {
+          "t_mapping(t_bytes32,t_struct(ContributionSchedule)5074_storage)": {
             "label": "mapping(bytes32 => struct RocketModel.ContributionSchedule)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_bytes32,t_struct(Pool)2020_storage)": {
+          "t_mapping(t_bytes32,t_struct(DistributionSchedule)5113_storage)": {
+            "label": "mapping(bytes32 => struct RocketModel.DistributionSchedule)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(Pool)5102_storage)": {
             "label": "mapping(bytes32 => struct RocketModel.Pool)",
             "numberOfBytes": "32"
           },
@@ -320,53 +326,11 @@
             "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(Contribution)2050_storage)": {
+          "t_mapping(t_uint256,t_struct(Contribution)5130_storage)": {
             "label": "mapping(uint256 => struct RocketModel.Contribution)",
             "numberOfBytes": "32"
           },
-          "t_struct(ClaimCalendar)2033_storage": {
-            "label": "struct RocketModel.ClaimCalendar",
-            "members": [
-              {
-                "label": "firstInterval",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "0"
-              },
-              {
-                "label": "nextInterval",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "1"
-              },
-              {
-                "label": "finalInterval",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "2"
-              },
-              {
-                "label": "depoistBatch",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "3"
-              },
-              {
-                "label": "claimRate",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "4"
-              },
-              {
-                "label": "duration",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "5"
-              }
-            ],
-            "numberOfBytes": "192"
-          },
-          "t_struct(Contribution)2050_storage": {
+          "t_struct(Contribution)5130_storage": {
             "label": "struct RocketModel.Contribution",
             "members": [
               {
@@ -412,7 +376,7 @@
                 "slot": "6"
               },
               {
-                "label": "withdrawalBatch",
+                "label": "distributionBatchId",
                 "type": "t_uint256",
                 "offset": 0,
                 "slot": "7"
@@ -420,7 +384,7 @@
             ],
             "numberOfBytes": "256"
           },
-          "t_struct(ContributionSchedule)1994_storage": {
+          "t_struct(ContributionSchedule)5074_storage": {
             "label": "struct RocketModel.ContributionSchedule",
             "members": [
               {
@@ -480,17 +444,53 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(Pool)2020_storage": {
+          "t_struct(DistributionSchedule)5113_storage": {
+            "label": "struct RocketModel.DistributionSchedule",
+            "members": [
+              {
+                "label": "poolId",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "startDate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "closeDate",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "batchId",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "claimPercentage",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              }
+            ],
+            "numberOfBytes": "160"
+          },
+          "t_struct(Pool)5102_storage": {
             "label": "struct RocketModel.Pool",
             "members": [
               {
-                "label": "tokenClaimAmount",
+                "label": "price",
                 "type": "t_uint256",
                 "offset": 0,
                 "slot": "0"
               },
               {
-                "label": "totalClaimToken",
+                "label": "expiryTime",
                 "type": "t_uint256",
                 "offset": 0,
                 "slot": "1"
@@ -502,7 +502,7 @@
                 "slot": "2"
               },
               {
-                "label": "expiryTime",
+                "label": "totalClaimedToken",
                 "type": "t_uint256",
                 "offset": 0,
                 "slot": "3"
@@ -514,49 +514,55 @@
                 "slot": "4"
               },
               {
-                "label": "poolRewardAddress",
-                "type": "t_address",
+                "label": "poolRewardTokenAmount",
+                "type": "t_uint256",
                 "offset": 0,
                 "slot": "5"
               },
               {
-                "label": "price",
+                "label": "currentDistributionBatchId",
                 "type": "t_uint256",
                 "offset": 0,
                 "slot": "6"
               },
               {
-                "label": "tokens",
-                "type": "t_array(t_address)dyn_storage",
-                "offset": 0,
-                "slot": "7"
-              },
-              {
                 "label": "isComplete",
                 "type": "t_bool",
                 "offset": 0,
-                "slot": "8"
+                "slot": "7"
               },
               {
                 "label": "canClaimToken",
                 "type": "t_bool",
                 "offset": 1,
+                "slot": "7"
+              },
+              {
+                "label": "tokens",
+                "type": "t_array(t_address)dyn_storage",
+                "offset": 0,
                 "slot": "8"
               },
               {
                 "label": "receiver",
                 "type": "t_address",
-                "offset": 2,
-                "slot": "8"
+                "offset": 0,
+                "slot": "9"
+              },
+              {
+                "label": "poolRewardAddress",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "10"
               },
               {
                 "label": "poolAddress",
                 "type": "t_bytes32",
                 "offset": 0,
-                "slot": "9"
+                "slot": "11"
               }
             ],
-            "numberOfBytes": "320"
+            "numberOfBytes": "384"
           },
           "t_struct(RoleData)43_storage": {
             "label": "struct AccessControlUpgradeable.RoleData",

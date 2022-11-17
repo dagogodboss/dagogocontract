@@ -11,6 +11,7 @@ pragma solidity ^0.8.0;
  * Never remove items from this list
  */
 abstract contract PermissionManagerStorage {
+  bytes32 public constant NULL = 0x00;
   bytes32 public constant PERMISSIONS_ADMIN_ROLE =
     keccak256("PERMISSIONS_ADMIN_ROLE");
   address public permissionItems;
@@ -18,5 +19,5 @@ abstract contract PermissionManagerStorage {
 
   uint256 public constant REJECTED_ID = 3;
   uint256 public constant SUSPENDED_ID = 0;
-  mapping(uint256 => string) tiers;
+  mapping(uint256 => bytes32) public tiers;
 }

@@ -36,7 +36,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       blockGasLimit: 20000000,
       throwOnCallFailures: false,
-      chainId: 31337,
+      chainId: 8545,
       initialBaseFeePerGas: 0,
       accounts: {
         mnemonic,
@@ -54,6 +54,15 @@ const config: HardhatUserConfig = {
     },
     rinkeby: {
       url: process.env.RINKEBY_URL || "",
+      accounts: {
+        count: 10,
+        initialIndex: 0,
+        mnemonic,
+        path: "m/44'/60'/0'/0",
+      },
+    },
+    goerli: {
+      url: process.env.GOERLI_URL || "",
       accounts: {
         count: 10,
         initialIndex: 0,

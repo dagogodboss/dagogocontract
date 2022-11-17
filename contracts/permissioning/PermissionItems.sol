@@ -69,15 +69,14 @@ contract PermissionItems is ERC1155, AccessControl {
   function mint(
     address to,
     uint256 id,
-    uint256 amount,
-    bytes memory data
+    uint256 amount
   ) external {
     require(
       hasRole(MINTER_ROLE, _msgSender()),
       "PermissionItems: must have minter role to mint"
     );
 
-    super._mint(to, id, amount, data);
+    super._mint(to, id, amount, '');
   }
 
   /**
@@ -90,15 +89,14 @@ contract PermissionItems is ERC1155, AccessControl {
   function mintBatch(
     address to,
     uint256[] memory ids,
-    uint256[] memory amounts,
-    bytes memory data
+    uint256[] memory amounts
   ) external {
     require(
       hasRole(MINTER_ROLE, _msgSender()),
       "PermissionItems: must have minter role to mint"
     );
 
-    super._mintBatch(to, ids, amounts, data);
+    super._mintBatch(to, ids, amounts, '');
   }
 
   /**

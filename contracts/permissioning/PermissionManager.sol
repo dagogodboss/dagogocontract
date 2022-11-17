@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 
 import "./PermissionItems.sol";
 import "./PermissionManagerStorage.sol";
+import "./interfaces/IPermissionManager.sol";
 
 /**
  * @title PermissionManager
@@ -14,6 +15,7 @@ import "./PermissionManagerStorage.sol";
  * @dev Provide tier based permissions assignments and revoking functions.
  */
 contract PermissionManager is
+  IPermissionManager,
   Initializable,
   AccessControlUpgradeable,
   PermissionManagerStorage
@@ -80,6 +82,13 @@ contract PermissionManager is
   }
 
   /**
+  	* @dev checks if an item is exists
+   */
+  modifier _onlyExistingTier(uint256 itemId) {
+    require(tiers[itemId] != NULL, "Item not found");
+    _;
+  }
+  /**
    * @dev Grants PERMISSIONS_ADMIN_ROLE to `_permissionsAdmin`.
    *
    * Requirements:
@@ -123,7 +132,7 @@ contract PermissionManager is
     external
     onlyPermissionsAdmin
   {
-    tiers[_tierId] = _tierName;
+    tiers[_tierId] = keccak256(abi.encodePacked(_tierName));
   }
 
   /**
@@ -137,20 +146,20 @@ contract PermissionManager is
    * @param _accounts The addresses to assign Tier.
    * @param _tierId The ID of the Tier to assign
    */
-  function assingTier(address[] memory _accounts, uint256 _tierId)
+  function assignTier(address[] memory _accounts, uint256 _tierId)
     external
     onlyPermissionsAdmin
+    _onlyExistingTier(_tierId)
   {
     for (uint256 i = 0; i < _accounts.length; i++) {
       require(
         !_hasItem(_accounts[i], _tierId),
-        "PermissionManager: Address already has Tier 1 assigned"
+        "PermissionManager: Address already has Tier assigned"
       );
       PermissionItems(permissionItems).mint(
         _accounts[i],
         _tierId,
-        1,
-        bytes(tiers[_tierId])
+        1
       );
     }
   }
@@ -171,7 +180,7 @@ contract PermissionManager is
         !isSuspended(_users[i]),
         "PermissionManager: Address is already suspended"
       );
-      PermissionItems(permissionItems).mint(_users[i], SUSPENDED_ID, 1, "");
+      PermissionItems(permissionItems).mint(_users[i], SUSPENDED_ID, 1);
     }
   }
 
@@ -192,7 +201,7 @@ contract PermissionManager is
         !isRejected(_users[i]),
         "PermissionManager: Address is already rejected"
       );
-      PermissionItems(permissionItems).mint(_users[i], REJECTED_ID, 1, "");
+      PermissionItems(permissionItems).mint(_users[i], REJECTED_ID, 1);
     }
   }
 
@@ -213,7 +222,7 @@ contract PermissionManager is
     for (uint256 i = 0; i < _accounts.length; i++) {
       require(
         _hasItem(_accounts[i], _tierId),
-        "PermissionManager: Address doesn't has Tier 1 assigned"
+        "PermissionManager: Address doesn't has Tier id assigned"
       );
       PermissionItems(permissionItems).burn(_accounts[i], _tierId, 1);
     }
@@ -253,7 +262,7 @@ contract PermissionManager is
    *
    * @param _users The addresses of the users and .
    */
-  function unrejectUser(address[] memory _users) external onlyPermissionsAdmin {
+  function unRejectUser(address[] memory _users) external onlyPermissionsAdmin {
     for (uint256 i = 0; i < _users.length; i++) {
       require(
         isRejected(_users[i]),
@@ -277,13 +286,14 @@ contract PermissionManager is
   function assignItem(uint256 _itemId, address[] memory _accounts)
     external
     onlyPermissionsAdmin
+    _onlyExistingTier(_itemId)
   {
     for (uint256 i = 0; i < _accounts.length; i++) {
       require(
         !_hasItem(_accounts[i], _itemId),
         "PermissionManager: Account is assigned with item"
       );
-      PermissionItems(permissionItems).mint(_accounts[i], _itemId, 1, "");
+      PermissionItems(permissionItems).mint(_accounts[i], _itemId, 1);
     }
   }
 
@@ -314,6 +324,7 @@ contract PermissionManager is
   function userHasItem(address _user, uint256 itemId)
     external
     view
+    override
     returns (bool)
   {
     return _hasItem(_user, itemId);
@@ -343,5 +354,9 @@ contract PermissionManager is
    */
   function isRejected(address _account) public view returns (bool) {
     return _hasItem(_account, REJECTED_ID);
+  }
+
+  function tierExists(uint256 _itemId) public view override returns (bool) {
+    return tiers[_itemId] != NULL;
   }
 }

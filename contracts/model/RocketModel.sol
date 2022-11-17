@@ -8,11 +8,12 @@ contract RocketModel {
   address permissionAddress;
   address internal feeAddress;
   uint256 internal constant DECIMAL = 18;
+  uint256 internal constant FEECONS = 10000;
   mapping(bytes32 => Pool) public pools;
   mapping(uint256 => Contribution) public contributions;
-  mapping(bytes32 => ClaimCalendar) public claimCalendars;
   mapping(address => Contribution[]) public myContributions;
-  mapping(bytes32 => ContributionSchedule) internal contributionSchedules;
+  mapping(bytes32 => ContributionSchedule) public contributionSchedules;
+  mapping(bytes32 => DistributionSchedule) public distributionSchedules;
 
   struct ContributionSchedule {
     bytes32 poolId;
@@ -25,27 +26,27 @@ contract RocketModel {
   }
   
   struct Pool {
-    uint256 tokenClaimAmount;
-    uint256 totalClaimToken;
-    uint256 targetAmount;
-    uint256 expiryTime;
-    uint256 amountContributed;
-    address poolRewardAddress;
     uint256 price;
-    address[] tokens;
+    uint256 expiryTime;
+    uint256 targetAmount;
+    uint256 totalClaimedToken;
+    uint256 amountContributed;
+    uint256 poolRewardTokenAmount;
+    uint256 currentDistributionBatchId;
     bool isComplete;
     bool canClaimToken;
+    address[] tokens;
     address receiver;
+    address poolRewardAddress;
     bytes32 poolAddress;
   }
 
-  struct ClaimCalendar {
-    uint256 firstInterval;
-    uint256 nextInterval;
-    uint256 finalInterval;
-    uint256 depoistBatch;
-    uint256 claimRate;
-    uint256 duration;
+  struct DistributionSchedule{
+    bytes32 poolId;
+    uint256 startDate;
+    uint256 closeDate;
+    uint256 batchId;
+    uint256 claimPercentage;
   }
 
   struct Contribution {
@@ -56,7 +57,7 @@ contract RocketModel {
     uint256 lastWithdrawal;
     uint256 nextWithdrawal;
     uint256 totalWithdrwan;
-    uint256 withdrawalBatch;
+    uint256 distributionBatchId;
   }
 
   struct CreatePoolDTO {
@@ -66,20 +67,17 @@ contract RocketModel {
     address _receiver;
     uint256 _price;
     address _poolRewardAddress;
-    uint256 _tokenClaimAmount;
-    uint256 _claimDuration;
-    uint256 _firstInterval;
-    uint256 _nextInterval;
-    uint256 _finalInterval;
-    uint256 _claimRate;
+    uint256 _poolRewardTokenAmount;
   }
 
-  event CreatedPool(bytes32 poolId, uint256 poolTargetAmount, address receiver);
-  event contributed(
+  event CreatedPool(bytes32 poolId, uint256 poolTargetAmount, address receiver, address[] tokens);
+  event Contributed(
     bytes32 poolId,
     address contributor,
     uint256 amount,
     uint256 contributionId
   );
-
+  event CreatedContributionSchedule(bytes32 poolId, bytes32 scheduleId);
+  event PoolTargetCompleted(bytes32 poolId);
+  event CreatedDistributionSchedule(bytes32 distributionId,bytes32 poolId, uint256 poolBatchId, uint256 startDate, uint256 closeDate);
 }

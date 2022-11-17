@@ -14,7 +14,8 @@ import fsExtra from "fs-extra";
 import { promises as fs } from "fs";
 
 import ora, { Ora } from "ora";
-
+const _rocketAdmin = process.env.ADMIN_ADDRESS;
+const _feeAddress = process.env.FEE_ADDRESS;
 let spinner: Ora;
 
 const deployPermissionManager = async (
@@ -83,9 +84,12 @@ async function main() {
   const RocketContract: ContractFactory = await ethers.getContractFactory(
     "Rocket"
   );
-  const rocket: Rocket = (await RocketContract.deploy(
-    permissionManager.address
-  )) as Rocket;
+  const rocket: Rocket = (await upgrades.deployProxy(RocketContract, [
+    permissionManager.address,
+    deployer.address,
+    _rocketAdmin,
+    _feeAddress,
+  ])) as Rocket;
   await rocket.deployed();
   deploymentData = {
     ...deploymentData,

@@ -69,6 +69,8 @@ const config: HardhatUserConfig = {
         mnemonic,
         path: "m/44'/60'/0'/0",
       },
+      gas: 2100000,
+      gasPrice: 8000000000,
     },
   },
   gasReporter: {

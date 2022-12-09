@@ -8,16 +8,16 @@ async function main(): Promise<void> {
   const [deployer] = await ethers.getSigners();
   const [deployerAddress] = await Promise.all([deployer.getAddress()]);
   // Verify Permission Item on any EVM compatible blockchain.
-  // await hre
-  //   .run("verify:verify", {
-  //     address: deploymentData.permissionItem.address,
-  //     constructorArguments: [],
-  //   })
-  //   .catch(ignoreAlreadyVerifiedError);
+  await hre
+    .run("verify:verify", {
+      address: deploymentData.permissionItem.address,
+      constructorArguments: [],
+    })
+    .catch(ignoreAlreadyVerifiedError);
   // Verify Permission Manager on any EVM compatible blockchain.
   await hre
     .run("verify:verify", {
-      address: "0x5cdd06c316e6f2de91610808fa397fa79f590574",
+      address: "0xE81a216C0AcB118f1bc3098bE2dA917dC3Cd9F82",
       constructorArguments: [],
     })
     .catch(ignoreAlreadyVerifiedError);
@@ -25,7 +25,7 @@ async function main(): Promise<void> {
   // Verify Rocket on any EVM compatible blockchain.
   await hre
     .run("verify:verify", {
-      address: "0x5ec578304a0f217805479fb8c7da76f7cb0a1911",
+      address: "0xcC50ae88e374bb620eA9AB3308dbE0fda0dcD6Ae",
       constructorArguments: [],
     })
     .catch(ignoreAlreadyVerifiedError);
